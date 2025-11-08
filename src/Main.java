@@ -18,10 +18,14 @@ class AlgorithmAnalysis {
 
     /** Generate array list with 100 elements of random integers.*/
 
-    /** Generate array list with 1000 elements of random integers.*/
+    /**
+     * Generate array list with 1000 elements of random integers.
+     *
+     * @return
+     */
 
 
-    private static void bubbleSort(List<Integer> theList) {
+    private static List<Integer> bubbleSort(List<Integer> theList) {
         int n = theList.size();
         boolean swapped; // Flag to optimize: if no swaps in a pass, array is sorted
 
@@ -37,9 +41,12 @@ class AlgorithmAnalysis {
             }
         }
         System.out.println(theList.toString());
+        return theList;
     }
 
     public static void main(String[] args) {
-        bubbleSort(listSize10());
+        List<Integer> listSize10 = listSize10();
+        List<Integer> sortedListSize10BS = bubbleSort(listSize10);
+
     }
 }
