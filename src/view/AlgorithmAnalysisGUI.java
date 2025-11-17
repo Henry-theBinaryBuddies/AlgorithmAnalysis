@@ -41,7 +41,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     private final JButton myRandomizeButton;
     private final JButton mySortButton;
     private final JButton mySaveBaselineButton = new JButton("Save Dataset");
-    private final JButton myRestoreBaselineButton = new JButton("Restore Dataset");
+    private final JButton myRestoreBaselineButton = new JButton("Restore Dataset"); // NEW
 
     private final JLabel myStatusLabel;
     private final JLabel myComparisonsLabel;
@@ -76,10 +76,10 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         controls.add(mySizeCombo);
         controls.add(Box.createHorizontalStrut(10));
 
-        // Buttons in a logical order
+        // Cleaned up – each button added once, in a logical order
         controls.add(myRandomizeButton);
         controls.add(mySaveBaselineButton);
-        controls.add(myRestoreBaselineButton);
+        controls.add(myRestoreBaselineButton); // NEW
         controls.add(mySortButton);
 
         add(controls, BorderLayout.NORTH);
@@ -99,7 +99,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         mySizeCombo.addActionListener(e -> randomizeData());
         mySortButton.addActionListener(e -> startSort());
         mySaveBaselineButton.addActionListener(e -> saveBaseline());
-        myRestoreBaselineButton.addActionListener(e -> restoreBaseline());
+        myRestoreBaselineButton.addActionListener(e -> restoreBaseline()); // NEW
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
@@ -124,8 +124,9 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myComparisonsLabel.setText("Comparisons: 0");
         myTimeLabel.setText("Time: 0 ms");
 
-        // NOTE: we do NOT clear the baseline here anymore.
-        // The saved baseline is only changed when you click "Save Dataset".
+        // Invalidate previous baseline
+        myBaselineDataset = null;
+        myBaselineFrozen = false;
 
         myBarPanel.repaint();
     }
@@ -138,17 +139,11 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myBaselineDataset = new ArrayList<>(myCurrentSnapshot);
         myBaselineFrozen = true;
         myStatusLabel.setText("Baseline saved (size = " + myBaselineDataset.size() + ")");
-
-        myRestoreBaselineButton.setEnabled(true);   // <-- add this
     }
 
     /** Restores the saved baseline into the current snapshot for visualization. */
     private void restoreBaseline() {
-        if (myIsSorting) {
-            return;
-        }
-        if (!myBaselineFrozen || myBaselineDataset == null || myBaselineDataset.isEmpty()) {
-            myStatusLabel.setText("No baseline saved to restore.");
+        if (myIsSorting || !myBaselineFrozen || myBaselineDataset == null || myBaselineDataset.isEmpty()) {
             return;
         }
 
@@ -233,7 +228,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myRandomizeButton.setEnabled(enabled);
         mySortButton.setEnabled(enabled);
         mySaveBaselineButton.setEnabled(enabled);
-        myRestoreBaselineButton.setEnabled(false);
+        myRestoreBaselineButton.setEnabled(enabled);
     }
 
     /** Panel that draws the current list as vertical bars. */
