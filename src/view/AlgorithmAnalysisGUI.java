@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * GUI to visualize your sorting algorithms using bars.
+ * GUI to visualize sorting algorithms using bars.
  */
 public final class AlgorithmAnalysisGUI extends JFrame {
 
@@ -53,7 +53,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         super("Algorithm Analysis – Sorting Visualizer");
 
         myAlgorithmCombo = new JComboBox<>(SortType.values());
-        mySizeCombo = new JComboBox<>(new Integer[]{10, 100});
+        mySizeCombo = new JComboBox<>(new Integer[]{10, 20, 100, 200, 500});
         mySizeCombo.setSelectedItem(100);
 
         myRandomizeButton = new JButton("Randomize");
@@ -279,8 +279,8 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     /** Entry point to launch the GUI. */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            AlgorithmAnalysisGUI gui = new AlgorithmAnalysisGUI();
-            gui.setVisible(true);
+                AlgorithmAnalysisGUI gui = new AlgorithmAnalysisGUI();
+                gui.setVisible(true);
         });
     }
 }
