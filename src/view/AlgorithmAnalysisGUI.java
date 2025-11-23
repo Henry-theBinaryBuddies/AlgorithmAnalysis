@@ -114,8 +114,8 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myRandomizeButton.addActionListener(e -> randomizeData());
         mySizeCombo.addActionListener(e -> randomizeData());
         mySpeedSlider.addChangeListener(e -> {
-                DELAY_MS = mySpeedSlider.getValue();
-                myDelayLabel.setText("Visual Delay: " + mySpeedSlider.getValue() + "ms");
+            DELAY_MS = mySpeedSlider.getValue();
+            myDelayLabel.setText("Visual Delay: " + mySpeedSlider.getValue() + "ms");
         });
         mySortButton.addActionListener(e -> startSort());
         mySaveBaselineButton.addActionListener(e -> saveBaseline());
@@ -124,8 +124,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
             if (myCompareToggle.isSelected()) {
                 myCompareToggle.setText("Descending");
                 myComparator = Comparator.reverseOrder();
-            }
-            else {
+            } else {
                 myCompareToggle.setText("Ascending");
                 myComparator = Comparator.naturalOrder();
             }
@@ -135,12 +134,14 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         pack();
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-
+        myBarPanel.setBackground(Color.BLACK);
         // initial dataset
         randomizeData();
     }
 
-    /** Generate a new random list and repaint. */
+    /**
+     * Generate a new random list and repaint.
+     */
     private void randomizeData() {
         if (myIsSorting) {
             return;
@@ -158,7 +159,9 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myBarPanel.repaint();
     }
 
-    /** Saves a dataset to a bank to be restored across different algorithms. */
+    /**
+     * Saves a dataset to a bank to be restored across different algorithms.
+     */
     private void saveBaseline() {
         if (myIsSorting || myCurrentSnapshot == null || myCurrentSnapshot.isEmpty()) {
             return;
@@ -169,7 +172,9 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myRestoreBaselineButton.setEnabled(true);
     }
 
-    /** Restores the saved baseline into the current snapshot for visualization. */
+    /**
+     * Restores the saved baseline into the current snapshot for visualization.
+     */
     private void restoreBaseline() {
         if (myIsSorting || !myBaselineFrozen || myBaselineDataset == null || myBaselineDataset.isEmpty()) {
             return;
@@ -186,7 +191,9 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myBarPanel.repaint();
     }
 
-    /** Start the selected sort on a background thread and animate bars. */
+    /**
+     * Start the selected sort on a background thread and animate bars.
+     */
     private void startSort() {
         if (myIsSorting) {
             return;
@@ -267,7 +274,9 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         );
     }
 
-    /** Panel that draws the current list as vertical bars. */
+    /**
+     * Panel that draws the current list as vertical bars.
+     */
     private final class BarPanel extends JPanel {
 
         @Override
@@ -297,12 +306,36 @@ public final class AlgorithmAnalysisGUI extends JFrame {
                 final int x = i * barWidth;
                 final int y = height - barHeight;
 
+                // --- draw bar ---
                 if (i == myHighlightA || i == myHighlightB) {
                     g.setColor(Color.RED);
                 } else {
                     g.setColor(Color.BLUE);
                 }
                 g.fillRect(x, y, barWidth - 1, barHeight);
+
+                // --- draw label (only if there's room) ---
+                if (barWidth >= 12) { // avoid unreadable spam on tiny bars
+                    final String label = String.valueOf(value);
+                    g.setColor(Color.GREEN); // stands out on blue/red
+
+                    FontMetrics fm = g.getFontMetrics();
+                    int textWidth = fm.stringWidth(label);
+                    int textHeight = fm.getAscent();
+
+                    // Center horizontally in bar
+                    int textX = x + (barWidth - textWidth) / 2;
+
+                    // Put text near top of bar if tall enough, else above it
+                    int textY;
+                    if (barHeight >= textHeight + 4) {
+                        textY = y + textHeight;         // inside bar
+                    } else {
+                        textY = y - 2;                  // just above bar
+                    }
+
+                    g.drawString(label, textX, textY);
+                }
             }
         }
     }
