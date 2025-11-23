@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -16,7 +17,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static final int DELAY_MS = 5;   // animation speed
+    private static int DELAY_MS;   // animation speed
     private static final int BOUND = 99;     // matches your random int boundary
 
     private final RandomIntListGenerator myGenerator =
@@ -34,14 +35,18 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     private int myHighlightB = -1;
 
     private boolean myIsSorting = false;
+    private Comparator<Integer> myComparator;
 
     // GUI components
     private final JComboBox<SortType> myAlgorithmCombo;
     private final JComboBox<Integer> mySizeCombo;
     private final JButton myRandomizeButton;
     private final JButton mySortButton;
-    private final JButton mySaveBaselineButton = new JButton("Save Dataset");
-    private final JButton myRestoreBaselineButton = new JButton("Restore Dataset"); // NEW
+    private final JButton mySaveBaselineButton;
+    private final JButton myRestoreBaselineButton;
+    private final JSlider mySpeedSlider;
+    private final JToggleButton myCompareToggle;
+
 
     private final JLabel myStatusLabel;
     private final JLabel myComparisonsLabel;
@@ -51,13 +56,19 @@ public final class AlgorithmAnalysisGUI extends JFrame {
 
     public AlgorithmAnalysisGUI() {
         super("Algorithm Analysis – Sorting Visualizer");
-
+        //Constructors:
+        myComparator = Comparator.naturalOrder();
+        String myCompareLabel = "Ascending";
         myAlgorithmCombo = new JComboBox<>(SortType.values());
         mySizeCombo = new JComboBox<>(new Integer[]{10, 20, 100, 200, 500});
-        mySizeCombo.setSelectedItem(100);
+        mySizeCombo.setSelectedItem(10);
+        mySaveBaselineButton = new JButton("Save Dataset");
+        myRestoreBaselineButton = new JButton("Restore Dataset");
+        mySpeedSlider = new JSlider(5, 500);
 
         myRandomizeButton = new JButton("Randomize");
         mySortButton = new JButton("Sort");
+        myCompareToggle = new JToggleButton(myCompareLabel);
 
         myStatusLabel = new JLabel("Ready.");
         myComparisonsLabel = new JLabel("Comparisons: 0");
@@ -75,11 +86,16 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         controls.add(new JLabel("Size:"));
         controls.add(mySizeCombo);
         controls.add(Box.createHorizontalStrut(10));
+        JLabel myDelayLabel = new JLabel("Visual Delay: " + mySpeedSlider.getValue() + "ms");
+        controls.add(myDelayLabel);
+        controls.add(mySpeedSlider);
+        controls.add(myCompareToggle);
 
         // Cleaned up – each button added once, in a logical order
         controls.add(myRandomizeButton);
         controls.add(mySaveBaselineButton);
-        controls.add(myRestoreBaselineButton); // NEW
+        controls.add(myRestoreBaselineButton);
+        myRestoreBaselineButton.setEnabled(false);
         controls.add(mySortButton);
 
         add(controls, BorderLayout.NORTH);
@@ -97,13 +113,28 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         // --- Listeners ---
         myRandomizeButton.addActionListener(e -> randomizeData());
         mySizeCombo.addActionListener(e -> randomizeData());
+        mySpeedSlider.addChangeListener(e -> {
+                DELAY_MS = mySpeedSlider.getValue();
+                myDelayLabel.setText("Visual Delay: " + mySpeedSlider.getValue() + "ms");
+        });
         mySortButton.addActionListener(e -> startSort());
         mySaveBaselineButton.addActionListener(e -> saveBaseline());
-        myRestoreBaselineButton.addActionListener(e -> restoreBaseline()); // NEW
+        myRestoreBaselineButton.addActionListener(e -> restoreBaseline());
+        myCompareToggle.addActionListener(e -> {
+            if (myCompareToggle.isSelected()) {
+                myCompareToggle.setText("Descending");
+                myComparator = Comparator.reverseOrder();
+            }
+            else {
+                myCompareToggle.setText("Ascending");
+                myComparator = Comparator.naturalOrder();
+            }
+        });
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         // initial dataset
         randomizeData();
@@ -124,10 +155,6 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myComparisonsLabel.setText("Comparisons: 0");
         myTimeLabel.setText("Time: 0 ms");
 
-        // Invalidate previous baseline
-        myBaselineDataset = null;
-        myBaselineFrozen = false;
-
         myBarPanel.repaint();
     }
 
@@ -139,6 +166,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myBaselineDataset = new ArrayList<>(myCurrentSnapshot);
         myBaselineFrozen = true;
         myStatusLabel.setText("Baseline saved (size = " + myBaselineDataset.size() + ")");
+        myRestoreBaselineButton.setEnabled(true);
     }
 
     /** Restores the saved baseline into the current snapshot for visualization. */
@@ -168,10 +196,15 @@ public final class AlgorithmAnalysisGUI extends JFrame {
             return;
         }
 
-        final SortAlgorithmBase sorter = SortFactory.createSorter(type);
+        final AbstractAlgorithmBase sorter = SortFactory.createSorter(type);
 
-        // Choose source list: baseline if frozen, else current snapshot
-        final List<Integer> source = (myBaselineFrozen && myBaselineDataset != null)
+        // Choose source list: baseline ONLY if frozen AND same size as current snapshot
+        final boolean useBaseline =
+                myBaselineFrozen
+                        && myBaselineDataset != null
+                        && myBaselineDataset.size() == myCurrentSnapshot.size();
+
+        final List<Integer> source = useBaseline
                 ? myBaselineDataset
                 : myCurrentSnapshot;
 
@@ -201,7 +234,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
             };
 
             // Run the visual sort
-            sorter.sort(working, listener, DELAY_MS);
+            sorter.sort(working, listener, mySpeedSlider.getValue(), myComparator);
 
             final long finalTimeNs = sorter.getTimeDuration();
             final long finalComps = sorter.getComparisonCount();
@@ -226,9 +259,12 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myAlgorithmCombo.setEnabled(enabled);
         mySizeCombo.setEnabled(enabled);
         myRandomizeButton.setEnabled(enabled);
+        mySpeedSlider.setEnabled(enabled);
         mySortButton.setEnabled(enabled);
         mySaveBaselineButton.setEnabled(enabled);
-        myRestoreBaselineButton.setEnabled(enabled);
+        myRestoreBaselineButton.setEnabled(
+                enabled && myBaselineFrozen && myBaselineDataset != null && !myBaselineDataset.isEmpty()
+        );
     }
 
     /** Panel that draws the current list as vertical bars. */
@@ -269,18 +305,5 @@ public final class AlgorithmAnalysisGUI extends JFrame {
                 g.fillRect(x, y, barWidth - 1, barHeight);
             }
         }
-
-        @Override
-        public Dimension getPreferredSize() {
-            return new Dimension(900, 400);
-        }
-    }
-
-    /** Entry point to launch the GUI. */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-                AlgorithmAnalysisGUI gui = new AlgorithmAnalysisGUI();
-                gui.setVisible(true);
-        });
     }
 }

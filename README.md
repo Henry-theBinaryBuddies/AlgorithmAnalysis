@@ -2,10 +2,9 @@
 This program generates unsorted integer ArrayLists that are then cloned, 
 and sorted through various methods to illustrate with data and visually the sorting technique efficiency.
 
-TODO: 
--Create a GUI toggle that allows user
-to flip the sorting from smallest to largest
-into largest to smallest.
--Speed slider (adjusts DELAY_MS)
+TODO:
+Comparator looks like it broke MergeSort, it looks like merge sort is changing the integers, 
+rather than swapping them. Need to debug and correct this, may need to consider modifying data 
+generation to be more visually intuitive using Collections.Shuffle on a fixed list with no duplicates.
 
 

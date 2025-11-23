@@ -1,32 +1,30 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-public final class MergeSort extends SortAlgorithmBase {
+public final class MergeAbstract extends AbstractAlgorithmBase {
 
     @Override
     public List<Integer> sort(final List<Integer> theList,
-                              final SortUpdateListener listener,
-                              final int delayMs) {
-
-        comparisonCount = 0;
-        final long start = System.nanoTime();
+                              final SortUpdateListener theListener,
+                              final int theVisualDelay, final Comparator<Integer> theComparator) {
 
         if (theList == null || theList.size() < 2) {
             timeDuration = System.nanoTime() - start;
-            if (listener != null) {
-                listener.onUpdate(theList, -1, -1, comparisonCount);
+            if (theListener != null) {
+                theListener.onUpdate(theList, -1, -1, comparisonCount);
             }
             return theList;
         }
 
-        mergeSort(theList, 0, theList.size() - 1, listener, delayMs);
+        mergeSort(theList, 0, theList.size() - 1, theListener, theVisualDelay, theComparator);
 
         timeDuration = System.nanoTime() - start;
 
-        if (listener != null) {
-            listener.onUpdate(theList, -1, -1, comparisonCount);
+        if (theListener != null) {
+            theListener.onUpdate(theList, -1, -1, comparisonCount);
         }
 
         return theList;
@@ -35,8 +33,8 @@ public final class MergeSort extends SortAlgorithmBase {
     private void mergeSort(final List<Integer> list,
                            final int left,
                            final int right,
-                           final SortUpdateListener listener,
-                           final int delayMs) {
+                           final SortUpdateListener theListener,
+                           final int delayMs, final Comparator<Integer> theComparator) {
 
         if (left >= right) {
             return;
@@ -44,17 +42,17 @@ public final class MergeSort extends SortAlgorithmBase {
 
         final int mid = left + (right - left) / 2;
 
-        mergeSort(list, left,      mid,     listener, delayMs);
-        mergeSort(list, mid + 1,   right,   listener, delayMs);
-        merge(list, left, mid, right, listener, delayMs);
+        mergeSort(list, left, mid, theListener, delayMs, theComparator);
+        mergeSort(list, mid + 1, right, theListener, delayMs, theComparator);
+        merge(list, left, mid, right, theListener, delayMs, theComparator);
     }
 
     private void merge(final List<Integer> list,
                        final int left,
                        final int mid,
                        final int right,
-                       final SortUpdateListener listener,
-                       final int delayMs) {
+                       final SortUpdateListener theListener,
+                       final int delayMs, final Comparator<Integer> theComparator) {
 
         final List<Integer> temp = new ArrayList<>(right - left + 1);
 
@@ -88,21 +86,11 @@ public final class MergeSort extends SortAlgorithmBase {
             final int targetIndex = left + k;
             list.set(targetIndex, temp.get(k));
 
-            if (listener != null) {
-                listener.onUpdate(list, targetIndex, -1, comparisonCount);
+            if (theListener != null) {
+                theListener.onUpdate(list, targetIndex, -1, comparisonCount);
                 sleep(delayMs);
             }
         }
     }
 
-    private void sleep(final int delayMs) {
-        if (delayMs <= 0) {
-            return;
-        }
-        try {
-            Thread.sleep(delayMs);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
 }

@@ -1,21 +1,19 @@
 package model;
 
+import java.util.Comparator;
 import java.util.List;
 
-public final class ShellSort extends SortAlgorithmBase {
+public final class ShellAbstract extends AbstractAlgorithmBase {
 
     @Override
     public List<Integer> sort(final List<Integer> theList,
-                              final SortUpdateListener listener,
-                              final int delayMs) {
-
-        comparisonCount = 0;
-        final long start = System.nanoTime();
+                              final SortUpdateListener theListener,
+                              final int theVisualDelay, final Comparator<Integer> theComparator) {
 
         if (theList == null || theList.size() < 2) {
             timeDuration = System.nanoTime() - start;
-            if (listener != null) {
-                listener.onUpdate(theList, -1, -1, comparisonCount);
+            if (theListener != null) {
+                theListener.onUpdate(theList, -1, -1, comparisonCount);
             }
             return theList;
         }
@@ -33,14 +31,14 @@ public final class ShellSort extends SortAlgorithmBase {
                 // Shift earlier gap-sorted elements up until correct spot for temp
                 while (j >= gap) {
                     comparisonCount++;
-                    if (theList.get(j - gap) > temp) {
+                    if (theComparator.compare(theList.get(j - gap), temp) > 0) {
                         theList.set(j, theList.get(j - gap));
                         j -= gap;
 
-                        if (listener != null) {
+                        if (theListener != null) {
                             // highlight the two positions involved in the shift
-                            listener.onUpdate(theList, j, j + gap, comparisonCount);
-                            sleep(delayMs);
+                            theListener.onUpdate(theList, j, j + gap, comparisonCount);
+                            sleep(theVisualDelay);
                         }
                     } else {
                         break;
@@ -49,31 +47,21 @@ public final class ShellSort extends SortAlgorithmBase {
 
                 // Put temp in its correct location
                 theList.set(j, temp);
-                if (listener != null) {
+                if (theListener != null) {
                     // highlight insertion position vs original index
-                    listener.onUpdate(theList, j, i, comparisonCount);
-                    sleep(delayMs);
+                    theListener.onUpdate(theList, j, i, comparisonCount);
+                    sleep(theVisualDelay);
                 }
             }
         }
 
         timeDuration = System.nanoTime() - start;
 
-        if (listener != null) {
-            listener.onUpdate(theList, -1, -1, comparisonCount);
+        if (theListener != null) {
+            theListener.onUpdate(theList, -1, -1, comparisonCount);
         }
 
         return theList;
     }
 
-    private void sleep(final int delayMs) {
-        if (delayMs <= 0) {
-            return;
-        }
-        try {
-            Thread.sleep(delayMs);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
 }
