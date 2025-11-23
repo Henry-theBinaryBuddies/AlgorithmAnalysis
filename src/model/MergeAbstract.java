@@ -59,14 +59,19 @@ public final class MergeAbstract extends AbstractAlgorithmBase {
         int i = left;
         int j = mid + 1;
 
-        // Merge into temp
+        // Merge into temp using comparator
         while (i <= mid && j <= right) {
             comparisonCount++;
-            if (list.get(i) <= list.get(j)) {
-                temp.add(list.get(i));
+
+            final int leftVal = list.get(i);
+            final int rightVal = list.get(j);
+
+            // If leftVal should come before rightVal (or tie), take left
+            if (theComparator.compare(leftVal, rightVal) <= 0) {
+                temp.add(leftVal);
                 i++;
             } else {
-                temp.add(list.get(j));
+                temp.add(rightVal);
                 j++;
             }
         }

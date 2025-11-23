@@ -40,7 +40,6 @@ public final class BubbleAbstract extends AbstractAlgorithmBase {
         if (theListener != null) {
             theListener.onUpdate(theList, -1, -1, comparisonCount);
         }
-
         return theList;
     }
 

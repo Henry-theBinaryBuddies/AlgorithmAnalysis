@@ -272,6 +272,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         myRestoreBaselineButton.setEnabled(
                 enabled && myBaselineFrozen && myBaselineDataset != null && !myBaselineDataset.isEmpty()
         );
+        myCompareToggle.setEnabled(enabled);
     }
 
     /**
