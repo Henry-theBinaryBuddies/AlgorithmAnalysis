@@ -33,7 +33,7 @@ public final class RandomIntListGenerator {
     public List<Integer> generate(final int theSize) {
         List<Integer> list = new ArrayList<>();
         for (int i = 0; i < theSize; i++) {
-            list.add(myRandom.nextInt(myBound));
+            list.add(myRandom.nextInt(myBound)+1);
         }
         System.out.println("Unsorted List: " +list);
         return list;

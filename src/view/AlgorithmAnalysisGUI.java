@@ -18,10 +18,6 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     private static final long serialVersionUID = 1L;
 
     private static int DELAY_MS;   // animation speed
-    private static final int BOUND = 99;     // matches your random int boundary
-
-    private final RandomIntListGenerator myGenerator =
-            new RandomIntListGenerator(BOUND);
 
     // Snapshot of current list state to draw (always touched on EDT)
     private List<Integer> myCurrentSnapshot = new ArrayList<>();
@@ -147,7 +143,10 @@ public final class AlgorithmAnalysisGUI extends JFrame {
             return;
         }
         int size = (Integer) mySizeCombo.getSelectedItem();
-        myCurrentSnapshot = myGenerator.generate(size);
+
+        // new bound == size
+        RandomIntListGenerator generator = new RandomIntListGenerator(size);
+        myCurrentSnapshot = generator.generate(size);
 
         // Reset highlights/stats
         myHighlightA = -1;
