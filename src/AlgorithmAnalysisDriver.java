@@ -1,5 +1,3 @@
-package Controller;
-
 import view.AlgorithmAnalysisGUI;
 
 import javax.swing.*;

@@ -25,7 +25,7 @@ public abstract class AbstractAlgorithmBase {
     }
 
     /**
-     * Non-visual sort entry point (e.g., for Controller.AlgorithmAnalysisDriver).
+     * Non-visual sort entry point (e.g., for AlgorithmAnalysisDriver).
      * This just delegates to the visual version with no listener and no delay.
      *
      * @param theList list to sort in-place
