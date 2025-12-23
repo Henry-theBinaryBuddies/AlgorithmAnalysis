@@ -1,12 +1,13 @@
 package view;
 
-import model.*;
+import controller.AlgorithmAnalysisController;
+
+import model.SortType;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serial;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -17,21 +18,14 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static int DELAY_MS;   // animation speed
+    private AlgorithmAnalysisController myController;
 
     // Snapshot of current list state to draw (always touched on EDT)
     private List<Integer> myCurrentSnapshot = new ArrayList<>();
 
-    // A saved baseline dataset, kept unsorted
-    private List<Integer> myBaselineDataset = null;
-    private boolean myBaselineFrozen = false;
-
     // Indices currently being operated on
     private int myHighlightA = -1;
     private int myHighlightB = -1;
-
-    private boolean myIsSorting = false;
-    private Comparator<Integer> myComparator;
 
     // GUI components
     private final JComboBox<SortType> myAlgorithmCombo;
@@ -44,6 +38,7 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     private final JToggleButton myCompareToggle;
 
 
+    private final JLabel myDelayLabel;
     private final JLabel myStatusLabel;
     private final JLabel myComparisonsLabel;
     private final JLabel myTimeLabel;
@@ -53,7 +48,6 @@ public final class AlgorithmAnalysisGUI extends JFrame {
     public AlgorithmAnalysisGUI() {
         super("Algorithm Analysis – Sorting Visualizer");
         //Constructors:
-        myComparator = Comparator.naturalOrder();
         String myCompareLabel = "Ascending";
         myAlgorithmCombo = new JComboBox<>(SortType.values());
         mySizeCombo = new JComboBox<>(new Integer[]{10, 20, 100, 200, 500});
@@ -82,12 +76,12 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         controls.add(new JLabel("Size:"));
         controls.add(mySizeCombo);
         controls.add(Box.createHorizontalStrut(10));
-        JLabel myDelayLabel = new JLabel("Visual Delay: " + mySpeedSlider.getValue() + "ms");
+        myDelayLabel = new JLabel("Visual Delay: " + mySpeedSlider.getValue() + "ms");
         controls.add(myDelayLabel);
         controls.add(mySpeedSlider);
         controls.add(myCompareToggle);
 
-        // Cleaned up – each button added once, in a logical order
+        // Buttons
         controls.add(myRandomizeButton);
         controls.add(mySaveBaselineButton);
         controls.add(myRestoreBaselineButton);
@@ -107,23 +101,21 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         add(status, BorderLayout.SOUTH);
 
         // --- Listeners ---
-        myRandomizeButton.addActionListener(e -> randomizeData());
-        mySizeCombo.addActionListener(e -> randomizeData());
+        myRandomizeButton.addActionListener(e ->
+                myController.handleRandomizeRequested());
+        mySizeCombo.addActionListener(e ->
+                myController.handleRandomizeRequested());
         mySpeedSlider.addChangeListener(e -> {
-            DELAY_MS = mySpeedSlider.getValue();
-            myDelayLabel.setText("Visual Delay: " + mySpeedSlider.getValue() + "ms");
+            myController.handleSpeedChanged(mySpeedSlider.getValue());
         });
-        mySortButton.addActionListener(e -> startSort());
-        mySaveBaselineButton.addActionListener(e -> saveBaseline());
-        myRestoreBaselineButton.addActionListener(e -> restoreBaseline());
+        mySortButton.addActionListener(
+                e -> myController.handleSortRequested());
+        mySaveBaselineButton.addActionListener(
+                e -> myController.handleSaveBaseline());
+        myRestoreBaselineButton.addActionListener(
+                e -> myController.handleRestoreBaseLine());
         myCompareToggle.addActionListener(e -> {
-            if (myCompareToggle.isSelected()) {
-                myCompareToggle.setText("Descending");
-                myComparator = Comparator.reverseOrder();
-            } else {
-                myCompareToggle.setText("Ascending");
-                myComparator = Comparator.naturalOrder();
-            }
+            myController.handleCompareModeToggled(myCompareToggle.isSelected());
         });
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -131,148 +123,101 @@ public final class AlgorithmAnalysisGUI extends JFrame {
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         myBarPanel.setBackground(Color.BLACK);
-        // initial dataset
-        randomizeData();
     }
 
-    /**
-     * Generate a new random list and repaint.
-     */
-    private void randomizeData() {
-        if (myIsSorting) {
-            return;
-        }
-        int size = (Integer) mySizeCombo.getSelectedItem();
+    public void setControlsEnabled(final boolean theEnabled) {
+        myAlgorithmCombo.setEnabled(theEnabled);
+        mySizeCombo.setEnabled(theEnabled);
+        myRandomizeButton.setEnabled(theEnabled);
+        mySpeedSlider.setEnabled(theEnabled);
+        mySortButton.setEnabled(theEnabled);
+        mySaveBaselineButton.setEnabled(theEnabled);
+        myCompareToggle.setEnabled(theEnabled);
+    }
 
-        // new bound == size
-        RandomIntListGenerator generator = new RandomIntListGenerator(size);
-        myCurrentSnapshot = generator.generate(size);
+    //Helper methods:
 
-        // Reset highlights/stats
+    public void setController(final AlgorithmAnalysisController theController) {
+        myController = theController;
+    }
+
+    public void setSnapshot(final List<Integer> theSnapshot) {
+        myCurrentSnapshot = theSnapshot;
         myHighlightA = -1;
         myHighlightB = -1;
-        myStatusLabel.setText("Ready. Size = " + size);
-        myComparisonsLabel.setText("Comparisons: 0");
-        myTimeLabel.setText("Time: 0 ms");
 
         myBarPanel.repaint();
     }
 
-    /**
-     * Saves a dataset to a bank to be restored across different algorithms.
-     */
-    private void saveBaseline() {
-        if (myIsSorting || myCurrentSnapshot == null || myCurrentSnapshot.isEmpty()) {
-            return;
+    public void setCompareToggleLabel(final boolean theDescending) {
+        if (theDescending) {
+            myCompareToggle.setText("Descending");
         }
-        myBaselineDataset = new ArrayList<>(myCurrentSnapshot);
-        myBaselineFrozen = true;
-        myStatusLabel.setText("Baseline saved (size = " + myBaselineDataset.size() + ")");
-        myRestoreBaselineButton.setEnabled(true);
+        else {
+            myCompareToggle.setText("Ascending");
+        }
     }
 
-    /**
-     * Restores the saved baseline into the current snapshot for visualization.
-     */
-    private void restoreBaseline() {
-        if (myIsSorting || !myBaselineFrozen || myBaselineDataset == null || myBaselineDataset.isEmpty()) {
-            return;
-        }
+    public void setDelayLabel(final int theDelayMs) {
+        myDelayLabel.setText("Visual Delay: " +theDelayMs + "ms");
+    }
 
-        myCurrentSnapshot = new ArrayList<>(myBaselineDataset);
-        myHighlightA = -1;
-        myHighlightB = -1;
+    public boolean isCompareToggleSelected() {
+        return myCompareToggle.isSelected();
+    }
 
-        myStatusLabel.setText("Baseline restored (size = " + myCurrentSnapshot.size() + ")");
+    public void setHighlights(final int theIndexA, final int theIndexB) {
+        myHighlightA = theIndexA;
+        myHighlightB = theIndexB;
+    }
+
+    public void setComparisons(final long theComparisons) {
+        myComparisonsLabel.setText("Comparisons: " + theComparisons);
+    }
+
+    public void setTimeLabel(final long theTimeMs) {
+        myTimeLabel.setText("Time: " + theTimeMs + " ms");
+    }
+
+    public void setStatus(final String theStatus) {
+        myStatusLabel.setText(theStatus);
+    }
+
+    public void resetStatsAfterRandomize(final int theSize) {
+        myStatusLabel.setText("Ready. Size = " + theSize);
         myComparisonsLabel.setText("Comparisons: 0");
         myTimeLabel.setText("Time: 0 ms");
-
-        myBarPanel.repaint();
     }
 
-    /**
-     * Start the selected sort on a background thread and animate bars.
-     */
-    private void startSort() {
-        if (myIsSorting) {
-            return;
-        }
-        SortType type = (SortType) myAlgorithmCombo.getSelectedItem();
-        if (type == null || myCurrentSnapshot.isEmpty()) {
-            return;
-        }
-
-        final AbstractAlgorithmBase sorter = SortFactory.createSorter(type);
-
-        // Choose source list: baseline ONLY if frozen AND same size as current snapshot
-        final boolean useBaseline =
-                myBaselineFrozen
-                        && myBaselineDataset != null
-                        && myBaselineDataset.size() == myCurrentSnapshot.size();
-
-        final List<Integer> source = useBaseline
-                ? myBaselineDataset
-                : myCurrentSnapshot;
-
-        // Copy so we never mutate the stored baseline
-        final List<Integer> working = new ArrayList<>(source);
-        myIsSorting = true;
-        setControlsEnabled(false);
-        myStatusLabel.setText("Sorting with " + sorter.name() + "...");
-
-        final long startNano = System.nanoTime();
-
-        Thread worker = new Thread(() -> {
-            // Listener called by the sorting algorithm
-            SortUpdateListener listener = (list, indexA, indexB, comparisons) -> {
-                // Make a copy for the GUI
-                final List<Integer> snapshotCopy = new ArrayList<>(list);
-                final long elapsedNs = System.nanoTime() - startNano;
-
-                SwingUtilities.invokeLater(() -> {
-                    myCurrentSnapshot = snapshotCopy;
-                    myHighlightA = indexA;
-                    myHighlightB = indexB;
-                    myComparisonsLabel.setText("Comparisons: " + comparisons);
-                    myTimeLabel.setText("Time: " + (elapsedNs / 1_000_000L) + " ms");
-                    myBarPanel.repaint();
-                });
-            };
-
-            // Run the visual sort
-            sorter.sort(working, listener, mySpeedSlider.getValue(), myComparator);
-
-            final long finalTimeNs = sorter.getTimeDuration();
-            final long finalComps = sorter.getComparisonCount();
-
-            SwingUtilities.invokeLater(() -> {
-                myIsSorting = false;
-                setControlsEnabled(true);
-                myHighlightA = -1;
-                myHighlightB = -1;
-                myTimeLabel.setText("Time: " + (finalTimeNs / 1_000_000L) + " ms");
-                myComparisonsLabel.setText("Comparisons: " + finalComps);
-                myStatusLabel.setText("Done: " + sorter.name());
-                myBarPanel.repaint();
-            });
-        });
-
-        worker.setDaemon(true);
-        worker.start();
+    public int getSelectedSize() {
+        return (Integer) mySizeCombo.getSelectedItem();
     }
 
-    private void setControlsEnabled(final boolean enabled) {
-        myAlgorithmCombo.setEnabled(enabled);
-        mySizeCombo.setEnabled(enabled);
-        myRandomizeButton.setEnabled(enabled);
-        mySpeedSlider.setEnabled(enabled);
-        mySortButton.setEnabled(enabled);
-        mySaveBaselineButton.setEnabled(enabled);
-        myRestoreBaselineButton.setEnabled(
-                enabled && myBaselineFrozen && myBaselineDataset != null && !myBaselineDataset.isEmpty()
-        );
-        myCompareToggle.setEnabled(enabled);
+    public List<Integer> getCurrentSnapshot() {
+        return myCurrentSnapshot;
     }
+
+    public int getSelectedSpeed() {
+        return mySpeedSlider.getValue();
+    }
+
+    public SortType getSelectedAlgorithm() {
+        return (SortType) myAlgorithmCombo.getSelectedItem();
+    }
+
+    public void setRestoreBaselineEnabled(final boolean theEnabled) {
+        myRestoreBaselineButton.setEnabled(theEnabled);
+    }
+
+    public void showBaselineSavedStatus(final int theSize) {
+        myStatusLabel.setText("Baseline saved. (size = " + theSize + ")");
+    }
+
+    public void showBaselineRestoredStatus(final int theSize) {
+        myStatusLabel.setText("Baseline restored. (size = " + theSize + ")");
+    }
+
+
 
     /**
      * Panel that draws the current list as vertical bars.

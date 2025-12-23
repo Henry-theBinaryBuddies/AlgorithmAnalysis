@@ -75,10 +75,8 @@ public abstract class AbstractAlgorithmBase {
 
     /**
      * Pauses the current sorting thread for a short time to slow down visualization.
-     * <p>
      * This is used by the GUI-enabled sorts so that bar updates are visible in real time.
      * If {@code delayMs} is zero or negative, no pause is performed.
-     * <p>
      * If the thread is interrupted while sleeping, the interrupt status is restored
      * via {@link Thread#currentThread()} and {@link Thread#interrupt()}, allowing
      * higher-level code to detect the interruption.
